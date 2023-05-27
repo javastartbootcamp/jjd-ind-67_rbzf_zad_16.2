@@ -21,74 +21,61 @@ public class Main {
 
     public void run(Scanner scanner) {
         // uzupełnij rozwiązanie. Korzystaj z przekazanego w parametrze scannera
-        TimeZone localTimeZone = TimeZone.getDefault();
-        List<String> listOfPatterns = Arrays.asList("yyyy-MM-dd HH:mm:ss", "dd.MM.yyyy HH:mm:ss");
-        String specialPattern = "yyyy-MM-dd";
-        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         System.out.println("Podaj datę:");
         String userInput = scanner.nextLine();
 
-        boolean patternCheck = false;
+        LocalDateTime localDateTime = null;
         try {
-            printForSpecialPattern(localTimeZone, userInput, specialPattern, formatter);
-            patternCheck = true;
+            localDateTime = createLocalDateTimeFromDate(userInput);
         } catch (DateTimeParseException e) {
-//
+            //
         }
+        if (localDateTime == null) {
+            localDateTime = createLocalDateTimeFromPattern(userInput);
+        }
+        if (localDateTime == null) {
+            System.out.println("Nieprawidlowy format daty.");
+        } else {
+            printAllTimeInZones(localDateTime);
+        }
+    }
 
+    private LocalDateTime createLocalDateTimeFromDate(String userInput) {
+        DateTimeFormatter pattern = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        TemporalAccessor temporalAccessor = pattern.parse(userInput);
+        LocalDate localDate = LocalDate.from(temporalAccessor);
+
+        return localDate.atTime(0, 0, 0);
+    }
+
+    private LocalDateTime createLocalDateTimeFromPattern(String userInput) {
+        List<String> listOfPatterns = Arrays.asList("yyyy-MM-dd HH:mm:ss", "dd.MM.yyyy HH:mm:ss");
+        TemporalAccessor temporalAccessor;
+        LocalDateTime localDateTime = null;
         for (String pat : listOfPatterns) {
             try {
-                printForPattern(localTimeZone, userInput, pat, formatter);
-                patternCheck = true;
-                break;
+                DateTimeFormatter pattern = DateTimeFormatter.ofPattern(pat);
+                temporalAccessor = pattern.parse(userInput);
+                localDateTime = LocalDateTime.from(temporalAccessor);
+
             } catch (DateTimeParseException e) {
-//
+                //
             }
         }
-
-        if (!patternCheck) {
-            System.out.println("Nieprawidlowy format daty.");
-        }
+        return localDateTime;
     }
 
-    private void printForPattern(TimeZone localTimeZone, String userInput, String pat, DateTimeFormatter formatter) {
-        LocalDateTime localDateTime = createLocalDateTimeFromPattern(userInput, pat);
-        printAllTimeZones(localTimeZone, formatter, localDateTime);
-
-    }
-
-    private LocalDateTime createLocalDateTimeFromPattern(String userInput, String pat) {
-        DateTimeFormatter pattern = DateTimeFormatter.ofPattern(pat);
-        TemporalAccessor temporalAccessor = pattern.parse(userInput);
-        return LocalDateTime.from(temporalAccessor);
-    }
-
-    private void printForSpecialPattern(TimeZone localTimeZone, String userInput, String specialPattern, DateTimeFormatter formatter) {
-        LocalDateTime localDateTime = createLocalDateTimeFromSpecialPattern(userInput, specialPattern);
-        printAllTimeZones(localTimeZone, formatter, localDateTime);
-    }
-
-    private void printAllTimeZones(TimeZone localTimeZone, DateTimeFormatter formatter, LocalDateTime localDateTime) {
-        printLocalTime(formatter, localDateTime);
+    private void printAllTimeInZones(LocalDateTime localDateTime) {
+        TimeZone localTimeZone = TimeZone.getDefault();
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        System.out.print("Czas lokalny: ");
+        System.out.println(localDateTime.format(formatter));
         ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.of(localTimeZone.getID()));
         printTimeInZone(zonedDateTime, "UTC", "UTC: ", formatter);
         printTimeInZone(zonedDateTime, "Europe/London", "Londyn: ", formatter);
         printTimeInZone(zonedDateTime, "America/Los_Angeles", "Los Angeles: ", formatter);
         printTimeInZone(zonedDateTime, "Australia/Sydney", "Sydney: ", formatter);
-    }
-
-    private static void printLocalTime(DateTimeFormatter formatter, LocalDateTime localDateTime) {
-        System.out.print("Czas lokalny: ");
-        System.out.println(localDateTime.format(formatter));
-    }
-
-    private LocalDateTime createLocalDateTimeFromSpecialPattern(String userInput, String specialPattern) {
-        DateTimeFormatter pattern = DateTimeFormatter.ofPattern(specialPattern);
-        TemporalAccessor temporalAccessor = pattern.parse(userInput);
-        LocalDate localDate = LocalDate.from(temporalAccessor);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(specialPattern);
-        return localDate.atTime(0, 0, 0);
     }
 
     private void printTimeInZone(ZonedDateTime zonedDateTime, String zoneId, String zoneName, DateTimeFormatter formatter) {
